@@ -1,4 +1,6 @@
+import os
 import subprocess
+
 import typer
 
 app = typer.Typer()
@@ -15,11 +17,11 @@ def build_psql_command(host, user, db, port, include_host):
     if include_host:
         cmd += ["-h", host]
 
-    if db:
-        cmd += ["-d", db]
-
     if port:
         cmd += ["-p", str(port)]
+
+    if db:
+        cmd += ["-d", db]
 
     return cmd
 
@@ -33,13 +35,15 @@ def explain_flags(include_host, user, db, port):
         typer.echo("-h → database host")
         typer.echo("     (where your database is running)\n")
 
+    if port:
+        typer.echo("-p → port")
+        typer.echo("     (how to reach the database service)\n")
+
     if db:
         typer.echo("-d → database name")
         typer.echo("     (which database to use)\n")
 
-    if port:
-        typer.echo("-p → port")
-        typer.echo("     (how to reach the database service)\n")
+    
 
 
 @app.command(name="c")
@@ -76,13 +80,23 @@ def connect():
         show_default=False
     )
 
-    # ✅ apply defaults
-    user = raw_user or "postgres"
-    host = raw_host or "localhost"
-    port = int(raw_port) if raw_port else None
+    # ✅ apply defaults (env vars → fallback → hardcoded)
+    user = raw_user or os.getenv("PGUSER") or "postgres"
+    host = raw_host or os.getenv("PGHOST") or "localhost"
 
-    # ✅ only include host if explicitly typed
-    include_host = bool(raw_host)
+    port = (
+        int(raw_port)
+        if raw_port
+        else int(os.getenv("PGPORT")) if os.getenv("PGPORT") else None
+    )
+
+    db = db or os.getenv("PGDATABASE")
+
+    
+    env_host = os.getenv("PGHOST")
+    host = raw_host or env_host or "localhost"
+
+    include_host = bool(raw_host or env_host)
 
     cmd = build_psql_command(host, user, db, port, include_host)
 

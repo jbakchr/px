@@ -3,32 +3,35 @@ import typer
 
 app = typer.Typer()
 
+SEPARATOR = "-" * 60
 
-def build_psql_command(host, user, db, port):
+
+def build_psql_command(host, user, db, port, include_host):
     cmd = ["psql"]
 
-    if host:
-        cmd += ["-h", host]
     if user:
         cmd += ["-U", user]
+
+    if include_host:
+        cmd += ["-h", host]
+
     if db:
         cmd += ["-d", db]
+
     if port:
         cmd += ["-p", str(port)]
 
     return cmd
 
 
-def explain_flags(host, user, db, port):
-    typer.echo("\n")
-
-    if host:
-        typer.echo("-h → database host")
-        typer.echo("     (where your database is running)\n")
-
+def explain_flags(include_host, user, db, port):
     if user:
         typer.echo("-U → database user")
         typer.echo("     (who you connect as)\n")
+
+    if include_host:
+        typer.echo("-h → database host")
+        typer.echo("     (where your database is running)\n")
 
     if db:
         typer.echo("-d → database name")
@@ -41,30 +44,60 @@ def explain_flags(host, user, db, port):
 
 @app.command(name="c")
 def connect_short():
-    """Connect to postgres (short version)"""
     connect()
 
 
 @app.command()
 def connect():
-    """Connect to postgres"""
-
     typer.echo("px → connect to postgres\n")
 
-    host = typer.prompt("Host", default="localhost")
-    user = typer.prompt("User", default="postgres")
-    db = typer.prompt("Database")
-    port = typer.prompt("Port (optional)", default="", show_default=False)
+    # ✅ prompts (clean, explicit defaults)
+    raw_user = typer.prompt(
+        "User (default: postgres)",
+        default="",
+        show_default=False
+    )
 
-    port = int(port) if port else None
+    raw_host = typer.prompt(
+        "Host (optional: localhost)",
+        default="",
+        show_default=False
+    )
 
-    cmd = build_psql_command(host, user, db, port)
+    raw_port = typer.prompt(
+        "Port (optional: 5432)",
+        default="",
+        show_default=False
+    )
 
-    typer.echo("\n👉 " + " ".join(cmd))
+    db = typer.prompt(
+        "Database (optional)",
+        default="",
+        show_default=False
+    )
 
-    explain_flags(host, user, db, port)
+    # ✅ apply defaults
+    user = raw_user or "postgres"
+    host = raw_host or "localhost"
+    port = int(raw_port) if raw_port else None
 
-    typer.echo("--- launching psql ---\n")
+    # ✅ only include host if explicitly typed
+    include_host = bool(raw_host)
+
+    cmd = build_psql_command(host, user, db, port, include_host)
+
+    # ✅ structured output (dx-style)
+    typer.echo("\n" + SEPARATOR + "\n")
+
+    typer.echo("Generated command:\n")
+    typer.echo("👉  " + " ".join(cmd) + "\n")
+
+    typer.echo("Explanation:\n")
+    explain_flags(include_host, user, db, port)
+
+    typer.echo(SEPARATOR + "\n")
+
+    typer.echo("Executing psql...\n")
 
     try:
         subprocess.run(cmd)

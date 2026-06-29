@@ -2,18 +2,68 @@ import typer
 
 
 def explain_flags(include_host, user, db, port):
-    if user:
-        typer.echo("-U → database user")
-        typer.echo("     (who you connect as)\n")
+    included = []
+    omitted = []
 
+    # ✅ -U (always included)
+    included.append((
+        "-U",
+        "database user",
+        "(who you connect as)"
+    ))
+
+    # ✅ -h
     if include_host:
-        typer.echo("-h → database host")
-        typer.echo("     (where your database is running)\n")
+        included.append((
+            "-h",
+            "database host",
+            "(where your database is running)"
+        ))
+    else:
+        omitted.append((
+            "-h",
+            "database host",
+            "(using environment/default)"
+        ))
 
+    # ✅ -p
     if port:
-        typer.echo("-p → port")
-        typer.echo("     (how to reach the database service)\n")
+        included.append((
+            "-p",
+            "port",
+            "(how to reach the database service)"
+        ))
+    else:
+        omitted.append((
+            "-p",
+            "port",
+            "(using default behavior)"
+        ))
 
+    # ✅ -d
     if db:
-        typer.echo("-d → database name")
-        typer.echo("     (which database to use)\n")
+        included.append((
+            "-d",
+            "database name",
+            "(which database to use)"
+        ))
+    else:
+        omitted.append((
+            "-d",
+            "database name",
+            "(not specified)"
+        ))
+
+    # ✅ render output
+
+    if included:
+        typer.echo("Included flags:\n")
+        for flag, title, desc in included:
+            typer.echo(f"{flag} → {title}")
+            typer.echo(f"     {desc}\n")
+
+    if omitted:
+        typer.echo("Omitted flags:\n")
+        for flag, title, desc in omitted:
+            typer.echo(f"{flag} → {title}")
+            typer.echo(f"     {desc}\n")

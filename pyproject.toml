@@ -1,0 +1,15 @@
+[project]
+name = "px"
+version = "0.1.0"
+description = "Learn psql by using it"
+authors = [{ name="Jonas" }]
+dependencies = [
+    "typer"
+]
+
+[project.scripts]
+px = "px.cli:app"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
